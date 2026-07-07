@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Rivals</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #101820, #1f4037);
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    .game-container {
+      text-align: center;
+      width: min(94vw, 720px);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 42px;
+      letter-spacing: 2px;
+    }
+
+    .score-board {
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+      font-size: 22px;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      background: #111;
+      border: 4px solid #00ff88;
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.4);
+    }
+
+    canvas:fullscreen {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      margin: auto;
+      background: #111;
+      object-fit: contain;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    .setting {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #f2f2f2;
+      font-size: 14px;
+    }
+
+    input[type="color"] {
+      width: 34px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #00ff88;
+      cursor: pointer;
+    }
+
+    input[type="number"] {
+      width: 56px;
+      padding: 5px 6px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    select {
+      width: 76px;
+      padding: 5px 6px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: #111;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .controls {
+      margin-top: 15px;
+      font-size: 15px;
+      color: #ddd;
+    }
+
+    .mobile-controls {
+      display: none;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(2, 48px);
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .mobile-control {
+      width: 56px;
+      height: 48px;
+      margin-top: 0;
+      padding: 0;
+      font-size: 20px;
+      touch-action: manipulation;
+    }
+
+    .mobile-control.up {
+      grid-column: 2;
+    }
+
+    .mobile-control.left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .mobile-control.down {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .mobile-control.right {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #00ff88;
+      color: #111;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00cc6a;
+    }
+
+    @media (max-width: 520px) {
+      .settings {
+        grid-template-columns: 1fr;
+      }
+
+      .mobile-controls {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>Snake Rivals</h1>
+
+    <div class="score-board" aria-live="polite">
+      <span>Score: <span id="score">0</span></span>
+      <span>High Score: <span id="highScore">0</span></span>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="400" aria-label="Snake Rivals game board"></canvas>
+
+    <div class="settings" aria-label="Game settings">
+      <label class="setting" for="snakeColor">
+        Snake
+        <input id="snakeColor" type="color" value="#00ff88" />
+      </label>
+
+      <label class="setting" for="borderColor">
+        Border
+        <input id="borderColor" type="color" value="#00ff88" />
+      </label>
+
+      <label class="setting" for="borderDeath">
+        Wall kills
+        <input id="borderDeath" type="checkbox" />
+      </label>
+
+      <label class="setting" for="gridVisible">
+        Grid
+        <input id="gridVisible" type="checkbox" />
+      </label>
+
+      <label class="setting" for="gridSize">
+        Cell size
+        <input id="gridSize" type="number" min="10" max="32" step="1" value="20" />
+      </label>
+
+      <label class="setting" for="boardWidth">
+        Width
+        <input id="boardWidth" type="number" min="12" max="50" step="1" value="50" />
+      </label>
+
+      <label class="setting" for="boardHeight">
+        Height
+        <input id="boardHeight" type="number" min="12" max="50" step="1" value="25" />
+      </label>
+
+      <label class="setting" for="playerSpeed">
+        Player speed
+        <input id="playerSpeed" type="number" min="1" max="10" step="1" value="4" />
+      </label>
+
+      <label class="setting" for="aiSpeed">
+        AI speed
+        <input id="aiSpeed" type="number" min="1" max="10" step="1" value="4" />
+      </label>
+
+      <label class="setting" for="aiMode">
+        AI mode
+        <select id="aiMode">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+
+      <label class="setting" for="rivalSnakes">
+        Rival snakes
+        <input id="rivalSnakes" type="checkbox" checked />
+      </label>
+
+      <label class="setting" for="biteRuleMode">
+        Bite rule
+        <select id="biteRuleMode">
+          <option value="logic">Safe zone</option>
+          <option value="body" selected>Any body</option>
+        </select>
+      </label>
+
+      <label class="setting" for="growthMode">
+        Bite growth
+        <select id="growthMode">
+          <option value="one">+1</option>
+          <option value="eaten">Segments</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="controls">
+      Move: Arrow Keys or WASD
+    </div>
+
+    <div class="mobile-controls" aria-label="Mobile movement controls">
+      <button class="mobile-control up" type="button" data-dx="0" data-dy="-1" aria-label="Move up">&uarr;</button>
+      <button class="mobile-control left" type="button" data-dx="-1" data-dy="0" aria-label="Move left">&larr;</button>
+      <button class="mobile-control down" type="button" data-dx="0" data-dy="1" aria-label="Move down">&darr;</button>
+      <button class="mobile-control right" type="button" data-dx="1" data-dy="0" aria-label="Move right">&rarr;</button>
+    </div>
+
+    <button id="startButton" type="button">Start Game</button>
+    <button id="restartButton" type="button">Restart Game</button>
+    <button id="fullscreenButton" type="button">Full Screen</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
+    const fullscreenButton = document.getElementById("fullscreenButton");
+    const scoreElement = document.getElementById("score");
+    const highScoreElement = document.getElementById("highScore");
+    const snakeColorInput = document.getElementById("snakeColor");
+    const borderColorInput = document.getElementById("borderColor");
+    const borderDeathInput = document.getElementById("borderDeath");
+    const gridVisibleInput = document.getElementById("gridVisible");
+    const gridSizeInput = document.getElementById("gridSize");
+    const boardWidthInput = document.getElementById("boardWidth");
+    const boardHeightInput = document.getElementById("boardHeight");
+    const playerSpeedInput = document.getElementById("playerSpeed");
+    const aiSpeedInput = document.getElementById("aiSpeed");
+    const aiModeInput = document.getElementById("aiMode");
+    const rivalSnakesInput = document.getElementById("rivalSnakes");
+    const biteRuleModeInput = document.getElementById("biteRuleMode");
+    const growthModeInput = document.getElementById("growthMode");
+
+    const minCellSize = 10;
+    const maxCellSize = 32;
+    const minBoardCells = 12;
+    const maxBoardCells = 50;
+    const minSpeed = 1;
+    const maxSpeed = 10;
+    const rivalSpawnIntervalMs = 5000;
+    const maxRivalSnakes = 6;
+    const rivalFoodChaseChance = 0.35;
+    const speedPickupBoost = 3;
+    const speedPickupDurationMs = 5000;
+    const highScoreStorageKey = "snakeRivalsHighScore";
+    const rivalSnakeColors = ["#4dabf7", "#ffd43b", "#cc5de8"];
+    const directions = [
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 }
+    ];
+
+    let snake;
+    let rivalSnakes;
+    let foods;
+    let speedPickup;
+    let dx;
+    let dy;
+    let queuedDirection;
+    let score;
+    let highScore = loadHighScore();
+    let gameRunning = false;
+    let gamePaused = false;
+    let gameLoop;
+    let rivalSpawnLoop;
+    let playerSpeedBoostTimer;
+    let aiSpeedBoostTimer;
+    let playerGrowth;
+    let playerSpeedBoost = 0;
+    let aiSpeedBoost = 0;
+    let aiMoveProgress;
+    let nextRivalId = 1;
+    let boardColumns = clampBoardCells(boardWidthInput.value);
+    let boardRows = clampBoardCells(boardHeightInput.value);
+    let cellSize = clampCellSize(gridSizeInput.value);
+
+    function initGame() {
+      applyBoardSize();
+
+      const startX = Math.floor(boardColumns / 2);
+      const startY = Math.floor(boardRows / 2);
+
+      snake = [
+        { x: startX, y: startY },
+        { x: startX - 1, y: startY },
+        { x: startX - 2, y: startY }
+      ];
+
+      rivalSnakes = [];
+      nextRivalId = 1;
+      foods = [];
+      speedPickup = null;
+      foods = generateFoods();
+      speedPickup = generateSpeedPickup();
+
+      dx = 1;
+      dy = 0;
+      queuedDirection = null;
+      playerGrowth = 0;
+      clearSpeedBoosts();
+      aiMoveProgress = 0;
+
+      score = 0;
+      gameRunning = true;
+      gamePaused = false;
+      updateScoreDisplay();
+      updateStartButton();
+
+      clearInterval(gameLoop);
+      stopRivalSpawnLoop();
+
+      if (rivalSnakesInput.checked) {
+        startRivalSpawnLoop();
+      }
+
+      gameLoop = setInterval(drawGame, getPlayerTickMs());
+      renderGame();
+    }
+
+    function generateFoods() {
+      const nextFoods = [];
+      const foodCount = randomInteger(1, 4);
+
+      for (let i = 0; i < foodCount; i++) {
+        const foodCell = generateEmptyCell(nextFoods);
+
+        if (foodCell) {
+          nextFoods.push(foodCell);
+        }
+      }
+
+      return nextFoods;
+    }
+
+    function generateSpeedPickup() {
+      return generateEmptyCell(foods);
+    }
+
+    function generateEmptyCell(extraOccupiedCells = []) {
+      const availableCells = [];
+
+      for (let x = 0; x < boardColumns; x++) {
+        for (let y = 0; y < boardRows; y++) {
+          const cell = { x, y };
+
+          if (!isCellOccupied(cell) && !isSpeedPickupCell(cell) && !extraOccupiedCells.some(occupiedCell => sameCell(occupiedCell, cell))) {
+            availableCells.push(cell);
+          }
+        }
+      }
+
+      if (availableCells.length === 0) {
+        return null;
+      }
+
+      return availableCells[Math.floor(Math.random() * availableCells.length)];
+    }
+
+    function drawGame() {
+      if (!gameRunning) return;
+
+      movePlayerSnake();
+
+      if (!gameRunning) return;
+
+      aiMoveProgress += getPlayerTickMs() / getAiTickMs();
+
+      while (aiMoveProgress >= 1 && gameRunning) {
+        moveRivalSnakes();
+        aiMoveProgress--;
+      }
+
+      if (gameRunning) {
+        renderGame();
+      }
+    }
+
+    function renderGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawGrid();
+      drawSnake();
+      drawRivalSnakes();
+      drawFoods();
+      drawSpeedPickup();
+    }
+
+    function drawSnake() {
+      snake.forEach((segment, index) => {
+        ctx.fillStyle = index === 0 ? snakeColorInput.value : shadeColor(snakeColorInput.value, -22);
+        ctx.fillRect(segment.x * cellSize, segment.y * cellSize, cellSize, cellSize);
+
+        ctx.strokeStyle = "#111";
+        ctx.strokeRect(segment.x * cellSize, segment.y * cellSize, cellSize, cellSize);
+      });
+    }
+
+    function drawRivalSnakes() {
+      rivalSnakes.forEach(rival => {
+        rival.body.forEach((segment, index) => {
+          ctx.fillStyle = index === 0 ? rival.color : shadeColor(rival.color, -24);
+          ctx.fillRect(segment.x * cellSize, segment.y * cellSize, cellSize, cellSize);
+
+          ctx.strokeStyle = "#111";
+          ctx.strokeRect(segment.x * cellSize, segment.y * cellSize, cellSize, cellSize);
+        });
+      });
+    }
+
+    function drawFoods() {
+      foods.forEach(food => {
+        ctx.fillStyle = "#ff4d4d";
+        ctx.beginPath();
+        ctx.arc(
+          food.x * cellSize + cellSize / 2,
+          food.y * cellSize + cellSize / 2,
+          cellSize / 2.5,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      });
+    }
+
+    function drawSpeedPickup() {
+      if (!speedPickup) return;
+
+      const centerX = speedPickup.x * cellSize + cellSize / 2;
+      const centerY = speedPickup.y * cellSize + cellSize / 2;
+      const radius = cellSize / 2.6;
+
+      ctx.fillStyle = "#38d9a9";
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY - radius);
+      ctx.lineTo(centerX + radius, centerY);
+      ctx.lineTo(centerX, centerY + radius);
+      ctx.lineTo(centerX - radius, centerY);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawGrid() {
+      if (!gridVisibleInput.checked) return;
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.lineWidth = 1;
+
+      for (let x = 1; x < boardColumns; x++) {
+        const position = x * cellSize;
+
+        ctx.beginPath();
+        ctx.moveTo(position, 0);
+        ctx.lineTo(position, canvas.height);
+        ctx.stroke();
+      }
+
+      for (let y = 1; y < boardRows; y++) {
+        const position = y * cellSize;
+
+        ctx.beginPath();
+        ctx.moveTo(0, position);
+        ctx.lineTo(canvas.width, position);
+        ctx.stroke();
+      }
+    }
+
+    function createRivalSnakes(count) {
+      const rivals = [];
+      const availableSlots = Math.max(0, maxRivalSnakes - rivalSnakes.length);
+      const spawnCount = Math.min(count, availableSlots);
+
+      for (let i = 0; i < spawnCount; i++) {
+        const rival = createRivalSnake(i, rivals);
+
+        if (rival) {
+          rivals.push(rival);
+        }
+      }
+
+      return rivals;
+    }
+
+    function createRivalSnake(index, existingRivals) {
+      const direction = directions[Math.floor(Math.random() * directions.length)];
+      const maxLength = Math.max(3, snake.length + 2);
+      const bodyLength = randomInteger(3, maxLength);
+
+      for (let attempt = 0; attempt < 250; attempt++) {
+        const head = {
+          x: Math.floor(Math.random() * boardColumns),
+          y: Math.floor(Math.random() * boardRows)
+        };
+        const body = buildSnakeBody(head, direction, bodyLength);
+
+        if (body && body.every(segment => {
+          return !isCellOccupied(segment) && !isFoodCell(segment) && !isSpeedPickupCell(segment) && !existingRivals.some(rival => {
+            return rival.body.some(existingSegment => sameCell(existingSegment, segment));
+          });
+        })) {
+          const id = nextRivalId++;
+
+          return {
+            id,
+            body,
+            dx: direction.dx,
+            dy: direction.dy,
+            growth: 0,
+            color: rivalSnakeColors[(id - 1) % rivalSnakeColors.length]
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function buildSnakeBody(head, direction, bodyLength) {
+      const body = [];
+
+      for (let i = 0; i < bodyLength; i++) {
+        const segment = {
+          x: head.x - direction.dx * i,
+          y: head.y - direction.dy * i
+        };
+
+        if (segment.x < 0 || segment.x >= boardColumns || segment.y < 0 || segment.y >= boardRows) {
+          return null;
+        }
+
+        body.push(segment);
+      }
+
+      return body;
+    }
+
+    function randomInteger(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function movePlayerSnake() {
+      applyQueuedDirection();
+
+      const head = getNextHead(snake[0], dx, dy);
+      const selfHitIndex = findHitIndex(snake, head);
+
+      if (isWallCollision(head) || isBlockingSelfHit(snake, selfHitIndex, playerGrowth)) {
+        endGame();
+        return;
+      }
+
+      const rivalHit = findRivalHitAtCell(head);
+
+      if (rivalHit) {
+        const eatenCount = getBiteEatenCount(snake.length, rivalHit.rival.body.length, rivalHit.segmentIndex);
+
+        if (eatenCount === 0) {
+          endGame();
+          return;
+        }
+
+        if (rivalHit.segmentIndex === 0) {
+          removeRival(rivalHit.rival);
+        } else {
+          rivalHit.rival.body = rivalHit.rival.body.slice(0, rivalHit.segmentIndex);
+        }
+
+        playerGrowth += getBiteGrowth(eatenCount);
+        score += eatenCount;
+      }
+
+      snake.unshift(head);
+
+      const foodIndex = findFoodIndex(head);
+
+      if (foodIndex !== -1) {
+        score++;
+        playerGrowth++;
+        foods.splice(foodIndex, 1);
+
+        if (foods.length === 0) {
+          foods = generateFoods();
+          speedPickup = speedPickup || generateSpeedPickup();
+        }
+      }
+
+      if (isSpeedPickupCell(head)) {
+        increasePlayerSpeed(speedPickupBoost);
+        speedPickup = generateSpeedPickup();
+      }
+
+      if (playerGrowth > 0) {
+        playerGrowth--;
+      } else {
+        snake.pop();
+      }
+
+      updateScoreDisplay();
+    }
+
+    function moveRivalSnakes() {
+      [...rivalSnakes].forEach(rival => {
+        if (!gameRunning || !rivalSnakes.includes(rival)) return;
+
+        chooseRivalDirection(rival);
+
+        const head = getNextHead(rival.body[0], rival.dx, rival.dy);
+        const selfHitIndex = findHitIndex(rival.body, head);
+
+        if (isWallCollision(head) || isBlockingSelfHit(rival.body, selfHitIndex, rival.growth)) {
+          removeRival(rival);
+          return;
+        }
+
+        const playerHitIndex = findHitIndex(snake, head);
+
+        if (playerHitIndex !== -1) {
+          const eatenCount = getBiteEatenCount(rival.body.length, snake.length, playerHitIndex);
+
+          if (eatenCount === 0) {
+            removeRival(rival);
+            return;
+          }
+
+          if (playerHitIndex === 0) {
+            endGame();
+            return;
+          } else {
+            snake = snake.slice(0, playerHitIndex);
+            rival.growth += getBiteGrowth(eatenCount);
+
+            if (!ensurePlayerAlive()) {
+              return;
+            }
+          }
+        }
+
+        const rivalHit = findRivalHitAtCell(head, rival.id);
+
+        if (rivalHit) {
+          const eatenCount = getBiteEatenCount(rival.body.length, rivalHit.rival.body.length, rivalHit.segmentIndex);
+
+          if (eatenCount === 0) {
+            removeRival(rival);
+            return;
+          }
+
+          if (rivalHit.segmentIndex === 0) {
+            removeRival(rivalHit.rival);
+          } else {
+            rivalHit.rival.body = rivalHit.rival.body.slice(0, rivalHit.segmentIndex);
+          }
+
+          rival.growth += getBiteGrowth(eatenCount);
+        }
+
+        rival.body.unshift(head);
+
+        const foodIndex = findFoodIndex(head);
+
+        if (foodIndex !== -1) {
+          rival.growth++;
+          foods.splice(foodIndex, 1);
+
+          if (foods.length === 0) {
+            foods = generateFoods();
+            speedPickup = speedPickup || generateSpeedPickup();
+          }
+        }
+
+        if (isSpeedPickupCell(head)) {
+          increaseAiSpeed(speedPickupBoost);
+          speedPickup = generateSpeedPickup();
+        }
+
+        if (rival.growth > 0) {
+          rival.growth--;
+        } else {
+          rival.body.pop();
+        }
+      });
+    }
+
+    function chooseRivalDirection(rival) {
+      const currentHead = rival.body[0];
+      const forwardHead = getNextHead(currentHead, rival.dx, rival.dy);
+      const targetFood = findNearestFood(currentHead);
+      const aiMode = aiModeInput.value;
+      const chaseChance = aiMode === "easy" ? 0.18 : aiMode === "hard" ? 0.8 : rivalFoodChaseChance;
+      const keepForwardChance = aiMode === "easy" ? 0.86 : aiMode === "hard" ? 0.35 : 0.75;
+      const shouldChaseFood = targetFood && Math.random() < chaseChance;
+
+      if (!shouldChaseFood && isSafeRivalMove(rival, forwardHead) && Math.random() < keepForwardChance) {
+        return;
+      }
+
+      const possibleDirections = directions
+        .filter(direction => !(direction.dx === -rival.dx && direction.dy === -rival.dy))
+        .map(direction => {
+          const nextHead = getNextHead(currentHead, direction.dx, direction.dy);
+          const score = scoreRivalMove(rival, nextHead, targetFood, shouldChaseFood, aiMode);
+
+          return { ...direction, score };
+        })
+        .sort((a, b) => a.score - b.score);
+
+      const chosenDirection = possibleDirections[0];
+
+      if (chosenDirection && chosenDirection.score < 1000) {
+        rival.dx = chosenDirection.dx;
+        rival.dy = chosenDirection.dy;
+      }
+    }
+
+    function scoreRivalMove(rival, nextHead, targetFood, shouldChaseFood, aiMode) {
+      let score = 0;
+
+      if (!isSafeRivalMove(rival, nextHead)) {
+        return 1000;
+      }
+
+      const playerHitIndex = findHitIndex(snake, nextHead);
+      const rivalHit = findRivalHitAtCell(nextHead, rival.id);
+
+      if (playerHitIndex !== -1) {
+        const eatenCount = getBiteEatenCount(rival.body.length, snake.length, playerHitIndex);
+
+        if (eatenCount === 0) {
+          score += aiMode === "easy" ? 35 : 1000;
+        } else {
+          score -= aiMode === "hard" ? 18 + eatenCount : 6 + eatenCount;
+        }
+      }
+
+      if (rivalHit) {
+        const eatenCount = getBiteEatenCount(rival.body.length, rivalHit.rival.body.length, rivalHit.segmentIndex);
+
+        if (eatenCount === 0) {
+          score += aiMode === "easy" ? 30 : 1000;
+        } else {
+          score -= aiMode === "hard" ? 14 + eatenCount : 5 + eatenCount;
+        }
+      }
+
+      if (aiMode === "easy") {
+        score += Math.random() * 8;
+
+        if (shouldChaseFood && targetFood) {
+          score += distance(nextHead, targetFood) * 0.35;
+        }
+
+        return score;
+      }
+
+      if (targetFood) {
+        score += distance(nextHead, targetFood) * (shouldChaseFood ? 1 : 0.35);
+      } else {
+        score += Math.random() * 3;
+      }
+
+      if (aiMode === "hard") {
+        score += countAdjacentThreats(rival, nextHead) * 3;
+
+        if (speedPickup) {
+          score += distance(nextHead, speedPickup) * 0.45;
+        }
+      }
+
+      return score + Math.random() * 0.35;
+    }
+
+    function countAdjacentThreats(rival, cell) {
+      return directions.reduce((count, direction) => {
+        const adjacentCell = getNextHead(cell, direction.dx, direction.dy);
+
+        if (!isSafeRivalMove(rival, adjacentCell)) {
+          return count + 1;
+        }
+
+        const playerHitIndex = findHitIndex(snake, adjacentCell);
+        const rivalHit = findRivalHitAtCell(adjacentCell, rival.id);
+
+        return count + (playerHitIndex !== -1 || rivalHit ? 1 : 0);
+      }, 0);
+    }
+
+    function isSafeRivalMove(rival, head) {
+      const selfHitIndex = findHitIndex(rival.body, head);
+
+      return !isWallCollision(head) && !isBlockingSelfHit(rival.body, selfHitIndex, rival.growth);
+    }
+
+    function getNextHead(head, moveX, moveY) {
+      let x = head.x + moveX;
+      let y = head.y + moveY;
+
+      if (!borderDeathInput.checked) {
+        x = (x + boardColumns) % boardColumns;
+        y = (y + boardRows) % boardRows;
+      }
+
+      return { x, y };
+    }
+
+    function isWallCollision(head) {
+      return borderDeathInput.checked && (
+        head.x < 0 ||
+        head.x >= boardColumns ||
+        head.y < 0 ||
+        head.y >= boardRows
+      );
+    }
+
+    function hitsSnakeBody(body, head) {
+      return findHitIndex(body, head) !== -1;
+    }
+
+    function isBlockingSelfHit(body, hitIndex, growth) {
+      if (hitIndex === -1) {
+        return false;
+      }
+
+      const hitTail = hitIndex === body.length - 1;
+
+      return !hitTail || growth > 0;
+    }
+
+    function findHitIndex(body, cell) {
+      return body.findIndex(segment => sameCell(segment, cell));
+    }
+
+    function findRivalHitAtCell(cell, excludedRivalId = null) {
+      for (const rival of rivalSnakes) {
+        if (rival.id === excludedRivalId) continue;
+
+        const segmentIndex = findHitIndex(rival.body, cell);
+
+        if (segmentIndex !== -1) {
+          return { rival, segmentIndex };
+        }
+      }
+
+      return null;
+    }
+
+    function getBiteEatenCount(attackerLength, targetLength, segmentIndex) {
+      const eatenCount = targetLength - segmentIndex;
+
+      if (segmentIndex === 0) {
+        return attackerLength >= targetLength ? targetLength : 0;
+      }
+
+      if (biteRuleModeInput.value === "body") {
+        return eatenCount;
+      }
+
+      return attackerLength >= eatenCount ? eatenCount : 0;
+    }
+
+    function getBiteGrowth(eatenCount) {
+      return growthModeInput.value === "eaten" ? eatenCount : 1;
+    }
+
+    function ensurePlayerAlive() {
+      if (snake.length > 0) {
+        return true;
+      }
+
+      endGame();
+      return false;
+    }
+
+    function removeRival(rival) {
+      rivalSnakes = rivalSnakes.filter(candidate => candidate.id !== rival.id);
+    }
+
+    function isCellOccupied(cell) {
+      const playerOccupiesCell = snake && snake.some(segment => sameCell(segment, cell));
+      const rivalOccupiesCell = rivalSnakes && rivalSnakes.some(rival => {
+        return rival.body.some(segment => sameCell(segment, cell));
+      });
+
+      return playerOccupiesCell || rivalOccupiesCell;
+    }
+
+    function findFoodIndex(cell) {
+      return foods.findIndex(food => sameCell(food, cell));
+    }
+
+    function findNearestFood(cell) {
+      if (foods.length === 0) return null;
+
+      return foods.reduce((nearestFood, food) => {
+        return distance(cell, food) < distance(cell, nearestFood) ? food : nearestFood;
+      });
+    }
+
+    function isFoodCell(cell) {
+      return findFoodIndex(cell) !== -1;
+    }
+
+    function isSpeedPickupCell(cell) {
+      return speedPickup && sameCell(speedPickup, cell);
+    }
+
+    function increasePlayerSpeed(amount) {
+      playerSpeedBoost = amount;
+      clearTimeout(playerSpeedBoostTimer);
+
+      if (gameRunning) {
+        clearInterval(gameLoop);
+        gameLoop = setInterval(drawGame, getPlayerTickMs());
+      }
+
+      playerSpeedBoostTimer = setTimeout(() => {
+        playerSpeedBoost = 0;
+
+        if (gameRunning) {
+          clearInterval(gameLoop);
+          gameLoop = setInterval(drawGame, getPlayerTickMs());
+        }
+      }, speedPickupDurationMs);
+    }
+
+    function increaseAiSpeed(amount) {
+      aiSpeedBoost = amount;
+      clearTimeout(aiSpeedBoostTimer);
+
+      aiSpeedBoostTimer = setTimeout(() => {
+        aiSpeedBoost = 0;
+      }, speedPickupDurationMs);
+    }
+
+    function sameCell(firstCell, secondCell) {
+      return firstCell.x === secondCell.x && firstCell.y === secondCell.y;
+    }
+
+    function distance(firstCell, secondCell) {
+      return Math.abs(firstCell.x - secondCell.x) + Math.abs(firstCell.y - secondCell.y);
+    }
+
+    function loadHighScore() {
+      try {
+        return Number.parseInt(localStorage.getItem(highScoreStorageKey), 10) || 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function saveHighScore() {
+      try {
+        localStorage.setItem(highScoreStorageKey, String(highScore));
+      } catch {
+        // High score still works for the current session if storage is unavailable.
+      }
+    }
+
+    function updateScoreDisplay() {
+      scoreElement.textContent = score;
+
+      if (score > highScore) {
+        highScore = score;
+        saveHighScore();
+      }
+
+      highScoreElement.textContent = highScore;
+    }
+
+    function endGame() {
+      gameRunning = false;
+      gamePaused = false;
+      clearInterval(gameLoop);
+      stopRivalSpawnLoop();
+      clearSpeedBoosts();
+      updateStartButton();
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "32px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 20);
+
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 20);
+      ctx.fillText("Press Start or Restart", canvas.width / 2, canvas.height / 2 + 55);
+    }
+
+    function changeDirection(event) {
+      const key = event.key.toLowerCase();
+      const targetTag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+      const movementKeys = ["arrowleft", "a", "arrowup", "w", "arrowright", "d", "arrowdown", "s"];
+
+      if (targetTag === "input" || targetTag === "select") return;
+      if (!movementKeys.includes(key)) return;
+
+      event.preventDefault();
+
+      if (queuedDirection) return;
+
+      if (key === "arrowleft" || key === "a") {
+        queueDirection(-1, 0);
+      }
+
+      if (key === "arrowup" || key === "w") {
+        queueDirection(0, -1);
+      }
+
+      if (key === "arrowright" || key === "d") {
+        queueDirection(1, 0);
+      }
+
+      if (key === "arrowdown" || key === "s") {
+        queueDirection(0, 1);
+      }
+    }
+
+    function queueDirection(nextDx, nextDy) {
+      if (nextDx === -dx && nextDy === -dy) {
+        return;
+      }
+
+      queuedDirection = { dx: nextDx, dy: nextDy };
+    }
+
+    function applyQueuedDirection() {
+      if (!queuedDirection) return;
+
+      dx = queuedDirection.dx;
+      dy = queuedDirection.dy;
+      queuedDirection = null;
+    }
+
+    function handleMobileDirection(event) {
+      const button = event.currentTarget;
+      const nextDx = Number.parseInt(button.dataset.dx, 10);
+      const nextDy = Number.parseInt(button.dataset.dy, 10);
+
+      event.preventDefault();
+
+      if (queuedDirection || Number.isNaN(nextDx) || Number.isNaN(nextDy)) {
+        return;
+      }
+
+      queueDirection(nextDx, nextDy);
+    }
+
+    function handleKeyboardCommand(event) {
+      const key = event.key.toLowerCase();
+      const targetTag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+      const isEditingSetting = ["input", "button", "select"].includes(targetTag);
+
+      if (isEditingSetting) return;
+
+      if (key === "r") {
+        event.preventDefault();
+        restartGame();
+      }
+
+      if (key === " ") {
+        event.preventDefault();
+        startGame();
+      }
+    }
+
+    function startGame() {
+      if (gameRunning) {
+        pauseGame();
+        return;
+      }
+
+      if (gamePaused) {
+        resumeGame();
+        return;
+      }
+
+      initGame();
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    function pauseGame() {
+      gameRunning = false;
+      gamePaused = true;
+      clearInterval(gameLoop);
+      stopRivalSpawnLoop();
+      updateStartButton();
+      renderPauseOverlay();
+    }
+
+    function resumeGame() {
+      gameRunning = true;
+      gamePaused = false;
+      aiMoveProgress = 0;
+
+      clearInterval(gameLoop);
+      gameLoop = setInterval(drawGame, getPlayerTickMs());
+
+      if (rivalSnakesInput.checked) {
+        startRivalSpawnLoop();
+      }
+
+      updateStartButton();
+      renderGame();
+    }
+
+    function updateStartButton() {
+      startButton.textContent = gameRunning ? "Pause Game" : gamePaused ? "Resume Game" : "Start Game";
+    }
+
+    function renderPauseOverlay() {
+      renderGame();
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "30px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Paused", canvas.width / 2, canvas.height / 2 - 10);
+
+      ctx.font = "18px Arial";
+      ctx.fillText("Click Resume Game", canvas.width / 2, canvas.height / 2 + 28);
+    }
+
+    function clampCellSize(value) {
+      const numericValue = Number.parseInt(value, 10);
+
+      if (Number.isNaN(numericValue)) {
+        return 20;
+      }
+
+      return Math.max(minCellSize, Math.min(maxCellSize, numericValue));
+    }
+
+    function clampBoardCells(value) {
+      const numericValue = Number.parseInt(value, 10);
+
+      if (Number.isNaN(numericValue)) {
+        return 25;
+      }
+
+      return Math.max(minBoardCells, Math.min(maxBoardCells, numericValue));
+    }
+
+    function clampSpeed(value) {
+      const numericValue = Number.parseInt(value, 10);
+
+      if (Number.isNaN(numericValue)) {
+        return 4;
+      }
+
+      return Math.max(minSpeed, Math.min(maxSpeed, numericValue));
+    }
+
+    function updateBoardSettings() {
+      const nextCellSize = clampCellSize(gridSizeInput.value);
+      const nextBoardColumns = clampBoardCells(boardWidthInput.value);
+      const nextBoardRows = clampBoardCells(boardHeightInput.value);
+      const boardChanged = (
+        nextCellSize !== cellSize ||
+        nextBoardColumns !== boardColumns ||
+        nextBoardRows !== boardRows
+      );
+
+      gridSizeInput.value = nextCellSize;
+      boardWidthInput.value = nextBoardColumns;
+      boardHeightInput.value = nextBoardRows;
+
+      if (!boardChanged) return;
+
+      cellSize = nextCellSize;
+      boardColumns = nextBoardColumns;
+      boardRows = nextBoardRows;
+
+      if (gameRunning) {
+        initGame();
+      } else {
+        renderStartScreen();
+      }
+    }
+
+    function updatePlayerSpeed() {
+      playerSpeedInput.value = clampSpeed(playerSpeedInput.value);
+
+      if (!gameRunning) return;
+
+      clearInterval(gameLoop);
+      gameLoop = setInterval(drawGame, getPlayerTickMs());
+    }
+
+    function updateAiSpeed() {
+      aiSpeedInput.value = clampSpeed(aiSpeedInput.value);
+    }
+
+    function getPlayerTickMs() {
+      const speed = getEffectiveSpeed(playerSpeedInput.value, playerSpeedBoost);
+
+      return getTickMsForSpeed(speed);
+    }
+
+    function getAiTickMs() {
+      const speed = getEffectiveSpeed(aiSpeedInput.value, aiSpeedBoost);
+
+      return getTickMsForSpeed(speed);
+    }
+
+    function getEffectiveSpeed(baseSpeed, boost) {
+      return clampSpeed(clampSpeed(baseSpeed) + boost);
+    }
+
+    function clearSpeedBoosts() {
+      playerSpeedBoost = 0;
+      aiSpeedBoost = 0;
+      clearTimeout(playerSpeedBoostTimer);
+      clearTimeout(aiSpeedBoostTimer);
+      playerSpeedBoostTimer = null;
+      aiSpeedBoostTimer = null;
+    }
+
+    function getTickMsForSpeed(speed) {
+      return 260 - speed * 20;
+    }
+
+    function applyBoardSize() {
+      canvas.width = boardColumns * cellSize;
+      canvas.height = boardRows * cellSize;
+    }
+
+    function renderStartScreen() {
+      applyBoardSize();
+      snake = [];
+      rivalSnakes = [];
+      foods = [];
+      speedPickup = null;
+      score = 0;
+      updateScoreDisplay();
+      clearInterval(gameLoop);
+      stopRivalSpawnLoop();
+      clearSpeedBoosts();
+      gameRunning = false;
+      gamePaused = false;
+      updateStartButton();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "30px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("Snake Rivals", canvas.width / 2, canvas.height / 2 - 16);
+
+      ctx.font = "18px Arial";
+      ctx.fillText("Click Start Game", canvas.width / 2, canvas.height / 2 + 22);
+    }
+
+    function startRivalSpawnLoop() {
+      stopRivalSpawnLoop();
+      rivalSpawnLoop = setInterval(spawnRivalWave, rivalSpawnIntervalMs);
+    }
+
+    function stopRivalSpawnLoop() {
+      clearInterval(rivalSpawnLoop);
+      rivalSpawnLoop = null;
+    }
+
+    function spawnRivalWave() {
+      if (!gameRunning || !rivalSnakesInput.checked) {
+        stopRivalSpawnLoop();
+        return;
+      }
+
+      const spawnedRivals = createRivalSnakes(randomInteger(2, 3));
+
+      if (spawnedRivals.length === 0) return;
+
+      rivalSnakes.push(...spawnedRivals);
+
+      if (gameRunning) {
+        renderGame();
+      }
+    }
+
+    function updateRivalSnakesSetting() {
+      rivalSnakes = [];
+
+      if (rivalSnakesInput.checked && gameRunning) {
+        startRivalSpawnLoop();
+      } else {
+        stopRivalSpawnLoop();
+      }
+
+      foods = generateFoods();
+      speedPickup = generateSpeedPickup();
+
+      if (gameRunning) {
+        renderGame();
+      } else if (gamePaused) {
+        renderPauseOverlay();
+      } else {
+        renderStartScreen();
+      }
+    }
+
+    function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        return;
+      }
+
+      canvas.requestFullscreen();
+    }
+
+    function updateFullscreenButton() {
+      fullscreenButton.textContent = document.fullscreenElement ? "Exit Full Screen" : "Full Screen";
+    }
+
+    function shadeColor(hex, percent) {
+      const value = parseInt(hex.slice(1), 16);
+      const amount = Math.round(2.55 * percent);
+      const red = Math.max(0, Math.min(255, (value >> 16) + amount));
+      const green = Math.max(0, Math.min(255, ((value >> 8) & 0x00ff) + amount));
+      const blue = Math.max(0, Math.min(255, (value & 0x0000ff) + amount));
+
+      return `rgb(${red}, ${green}, ${blue})`;
+    }
+
+    function updateBorderColor() {
+      canvas.style.borderColor = borderColorInput.value;
+      canvas.style.boxShadow = `0 0 25px ${borderColorInput.value}66`;
+    }
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", restartGame);
+    fullscreenButton.addEventListener("click", toggleFullscreen);
+    document.querySelectorAll(".mobile-control").forEach(button => {
+      button.addEventListener("pointerdown", handleMobileDirection);
+    });
+    borderColorInput.addEventListener("input", updateBorderColor);
+    gridVisibleInput.addEventListener("input", () => {
+      if (gameRunning) {
+        renderGame();
+      } else if (gamePaused) {
+        renderPauseOverlay();
+      } else {
+        renderStartScreen();
+      }
+    });
+    gridSizeInput.addEventListener("change", updateBoardSettings);
+    boardWidthInput.addEventListener("change", updateBoardSettings);
+    boardHeightInput.addEventListener("change", updateBoardSettings);
+    playerSpeedInput.addEventListener("change", updatePlayerSpeed);
+    aiSpeedInput.addEventListener("change", updateAiSpeed);
+    rivalSnakesInput.addEventListener("input", updateRivalSnakesSetting);
+    document.addEventListener("keydown", changeDirection);
+    document.addEventListener("keydown", handleKeyboardCommand);
+    document.addEventListener("fullscreenchange", updateFullscreenButton);
+
+    updateBorderColor();
+    updateBoardSettings();
+    updatePlayerSpeed();
+    updateAiSpeed();
+    updateStartButton();
+    updateFullscreenButton();
+    renderStartScreen();
+  </script>
+
+</body>
+</html>
