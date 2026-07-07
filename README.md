@@ -2,7 +2,9 @@
 
 Snake Rivals is a browser-based Snake variant built in a single HTML file. It keeps the classic food-and-growth loop, then adds rival AI snakes, bite-based combat, pickups, and configurable match rules.
 
-## Run
+**Play here:** [Snake Rivals](https://mistforged.github.io/snake-rivals/)
+
+## Run Locally
 
 Open `index.html` in a browser.
 
