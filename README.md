@@ -11,7 +11,7 @@ Open `index.html` in a browser.
 ## Controls
 
 - Move with Arrow Keys or WASD.
-- On mobile, use the on-screen direction buttons.
+- On mobile, swipe up, down, left, or right on the game board.
 - Press Space to start, pause, or resume.
 - Press R to restart.
 - Use the Full Screen button for canvas-only fullscreen play.

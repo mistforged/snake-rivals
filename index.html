@@ -41,6 +41,14 @@
       font-size: 22px;
     }
 
+    .game-board {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+      touch-action: none;
+    }
+
     canvas {
       max-width: 100%;
       height: auto;
@@ -58,6 +66,22 @@
       margin: auto;
       background: #111;
       object-fit: contain;
+    }
+
+    .game-board:fullscreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      background: #050505;
+    }
+
+    .game-board:fullscreen canvas {
+      width: auto;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
     }
 
     .settings {
@@ -125,42 +149,6 @@
       color: #ddd;
     }
 
-    .mobile-controls {
-      display: none;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(2, 48px);
-      justify-content: center;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .mobile-control {
-      width: 56px;
-      height: 48px;
-      margin-top: 0;
-      padding: 0;
-      font-size: 20px;
-      touch-action: manipulation;
-    }
-
-    .mobile-control.up {
-      grid-column: 2;
-    }
-
-    .mobile-control.left {
-      grid-column: 1;
-      grid-row: 2;
-    }
-
-    .mobile-control.down {
-      grid-column: 2;
-      grid-row: 2;
-    }
-
-    .mobile-control.right {
-      grid-column: 3;
-      grid-row: 2;
-    }
 
     button {
       margin-top: 15px;
@@ -182,10 +170,6 @@
       .settings {
         grid-template-columns: 1fr;
       }
-
-      .mobile-controls {
-        display: grid;
-      }
     }
   </style>
 </head>
@@ -199,7 +183,10 @@
       <span>High Score: <span id="highScore">0</span></span>
     </div>
 
-    <canvas id="gameCanvas" width="400" height="400" aria-label="Snake Rivals game board"></canvas>
+    <div class="game-board">
+      <canvas id="gameCanvas" width="400" height="400" aria-label="Snake Rivals game board"></canvas>
+
+    </div>
 
     <div class="settings" aria-label="Game settings">
       <label class="setting" for="snakeColor">
@@ -282,12 +269,6 @@
       Move: Arrow Keys or WASD
     </div>
 
-    <div class="mobile-controls" aria-label="Mobile movement controls">
-      <button class="mobile-control up" type="button" data-dx="0" data-dy="-1" aria-label="Move up">&uarr;</button>
-      <button class="mobile-control left" type="button" data-dx="-1" data-dy="0" aria-label="Move left">&larr;</button>
-      <button class="mobile-control down" type="button" data-dx="0" data-dy="1" aria-label="Move down">&darr;</button>
-      <button class="mobile-control right" type="button" data-dx="1" data-dy="0" aria-label="Move right">&rarr;</button>
-    </div>
 
     <button id="startButton" type="button">Start Game</button>
     <button id="restartButton" type="button">Restart Game</button>
@@ -297,6 +278,7 @@
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const gameBoard = document.querySelector(".game-board");
     const startButton = document.getElementById("startButton");
     const restartButton = document.getElementById("restartButton");
     const fullscreenButton = document.getElementById("fullscreenButton");
@@ -359,6 +341,9 @@
     let boardColumns = clampBoardCells(boardWidthInput.value);
     let boardRows = clampBoardCells(boardHeightInput.value);
     let cellSize = clampCellSize(gridSizeInput.value);
+    let touchStartX = null;
+    let touchStartY = null;
+    const swipeThreshold = 28;
 
     function initGame() {
       applyBoardSize();
@@ -1116,18 +1101,39 @@
       queuedDirection = null;
     }
 
-    function handleMobileDirection(event) {
-      const button = event.currentTarget;
-      const nextDx = Number.parseInt(button.dataset.dx, 10);
-      const nextDy = Number.parseInt(button.dataset.dy, 10);
 
-      event.preventDefault();
-
-      if (queuedDirection || Number.isNaN(nextDx) || Number.isNaN(nextDy)) {
+    function handleBoardTouchStart(event) {
+      if (event.touches.length !== 1) {
         return;
       }
 
-      queueDirection(nextDx, nextDy);
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    }
+
+    function handleBoardTouchEnd(event) {
+      if (touchStartX === null || touchStartY === null || event.changedTouches.length === 0) {
+        return;
+      }
+
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+
+      if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < swipeThreshold || queuedDirection) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        queueDirection(deltaX > 0 ? 1 : -1, 0);
+        return;
+      }
+
+      queueDirection(0, deltaY > 0 ? 1 : -1);
     }
 
     function handleKeyboardCommand(event) {
@@ -1398,7 +1404,7 @@
         return;
       }
 
-      canvas.requestFullscreen();
+      gameBoard.requestFullscreen();
     }
 
     function updateFullscreenButton() {
@@ -1423,9 +1429,9 @@
     startButton.addEventListener("click", startGame);
     restartButton.addEventListener("click", restartGame);
     fullscreenButton.addEventListener("click", toggleFullscreen);
-    document.querySelectorAll(".mobile-control").forEach(button => {
-      button.addEventListener("pointerdown", handleMobileDirection);
-    });
+
+    gameBoard.addEventListener("touchstart", handleBoardTouchStart, { passive: true });
+    gameBoard.addEventListener("touchend", handleBoardTouchEnd, { passive: false });
     borderColorInput.addEventListener("input", updateBorderColor);
     gridVisibleInput.addEventListener("input", () => {
       if (gameRunning) {
